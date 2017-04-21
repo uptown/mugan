@@ -12,6 +12,10 @@ class Layer:
     def __init__(self):
         self.name = self.prefix + ":" + str(_layer_count[self.__class__])
         _layer_count[self.__class__] += 1
+        self.network = None
+
+    def set_network(self, network):
+        self.network = network
 
     def connect(self, *args, **kwargs):
         raise NotImplemented
@@ -19,6 +23,7 @@ class Layer:
 
 class LSTMLayer(Layer):
     prefix = "lstm"
+
     def __init__(self, n_hidden, n_classes):
         super().__init__()
 
@@ -35,41 +40,103 @@ class LSTMLayer(Layer):
         return tf.matmul(outputs[-1], self.w) + self.b
 
 
+class BatchNormalizationLayer(Layer):
+    prefix = "bn"
+
+    def __init__(self, epsilon=1e-5, momentum=0.9):
+        super().__init__()
+        self.epsilon = epsilon
+        self.momentum = momentum
+
+    def connect(self, x):
+        with tf.variable_scope(self.name):
+            return tf.contrib.layers.batch_norm(x,
+                                                decay=self.momentum,
+                                                updates_collections=None,
+                                                epsilon=self.epsilon,
+                                                scale=True,
+                                                is_training=self.network.is_training,
+                                                scope=self.name)
+
+
 class ConvolutionLayer(Layer):
     prefix = "conv"
+
     def __init__(self, in_ch, out_ch, c_size=3, strides=None, padding="SAME", activation=tf.nn.relu):
         super().__init__()
         if strides is None:
             strides = [1, 1, 1, 1]
         self.in_ch = in_ch
         self.out_ch = out_ch
-        self.c_size = 3
+        if type(c_size) in (list, tuple):
+            h_c_size = c_size[0]
+            w_c_size = c_size[1]
+        else:
+            h_c_size = w_c_size = c_size
         self.strides = strides
         self.padding = padding
         self.activation = activation
         with tf.variable_scope(self.name):
             self.f = tf.Variable(
-                tf.truncated_normal([self.c_size, self.c_size, self.in_ch, self.out_ch], self.mean, self.stddev),
+                tf.truncated_normal([h_c_size, w_c_size, self.in_ch, self.out_ch], self.mean, self.stddev),
                 name="f")
             self.b = tf.Variable(tf.truncated_normal([self.out_ch], self.mean, self.stddev), name="b")
+            # self.bn_layer = BatchNormalizationLayer()
 
-    def connect(self, data, is_training=False):
+    def connect(self, data):
         t = tf.nn.conv2d(data, self.f, strides=self.strides, padding=self.padding)
         t = tf.nn.bias_add(t, self.b)
-
+        # t = self.bn_layer.connect(t)
         # with tf.variable_scope(self.name):
         #     t = batch_norm(t, self.out_ch, is_training)
         return self.activation(t) if self.activation else t
 
-#tf.nn.conv2d_transpose(value, filter, output_shape, strides, padding='SAME',
-#data_format='NHWC', name=None)
+
+class ActivationLayer(Layer):
+    prefix = "atv"
+
+    def __init__(self, activation=tf.nn.relu):
+        super().__init__()
+        self.activation = activation
+
+    def connect(self, x):
+        return self.activation(x)
+
 
 class DeconvolutionLayer(Layer):
     prefix = "deconv"
-    def __init__(self, in_ch, out_ch, c_size=3, strides=None, )
+
+    def __init__(self, in_ch, out_shape, c_size=3, strides=None, padding="SAME", activation=tf.nn.relu):
+        super().__init__()
+        if strides is None:
+            strides = [1, 1, 1, 1]
+
+        self.out_shape = out_shape
+        self.in_ch = in_ch
+        if type(c_size) in (list, tuple):
+            h_c_size = c_size[0]
+            w_c_size = c_size[1]
+        else:
+            h_c_size = w_c_size = c_size
+        self.strides = strides
+        self.padding = padding
+        self.activation = activation
+
+        with tf.variable_scope(self.name):
+            self.f = tf.Variable(
+                tf.truncated_normal([h_c_size, w_c_size, in_ch, out_shape[-1]], self.mean, self.stddev),
+                name="f")
+            self.b = tf.Variable(tf.truncated_normal([out_shape[-1]], self.mean, self.stddev), name="b")
+
+    def connect(self, data):
+        t = tf.nn.conv2d_transpose(data, self.f, self.out_shape, strides=self.strides, padding=self.padding)
+        t = tf.nn.bias_add(t, self.b)
+        return self.activation(t) if self.activation else t
+
 
 class MaxPoolLayer(Layer):
     prefix = "mpool"
+
     def __init__(self, k_size=None, strides=None, padding='SAME'):
         super().__init__()
 
@@ -87,6 +154,7 @@ class MaxPoolLayer(Layer):
 
 class RegionalSelectionLayer(Layer):
     prefix = "r_s"
+
     def __init__(self, region_count, size):
         super().__init__()
         self.region_count = region_count
@@ -107,6 +175,7 @@ class RegionalSelectionLayer(Layer):
 
 class AvgPoolLayer(Layer):
     prefix = "apool"
+
     def __init__(self, k_size=None, strides=None, padding='SAME'):
         super().__init__()
 
@@ -123,8 +192,10 @@ class AvgPoolLayer(Layer):
 
 
 class FullConnectedLayer(Layer):
-    def __init__(self, in_ch, out_ch, activation=tf.nn.relu, prefix="fc"):
-        super().__init__(prefix)
+    prefix = "fc"
+
+    def __init__(self, in_ch, out_ch, activation=tf.nn.relu):
+        super().__init__()
 
         self.in_ch = in_ch
         self.out_ch = out_ch
@@ -164,19 +235,22 @@ class FullConnectedLayer(Layer):
 
 
 class DropConnectedLayer(FullConnectedLayer):
+    prefix = "d_fc"
+
     def __init__(self, in_ch, out_ch, rate, activation=tf.nn.relu):
-        super().__init__(in_ch, out_ch, activation, prefix="d_fc")
+        super().__init__(in_ch, out_ch, activation)
         self.rate = rate
         self.w = tf.nn.dropout(self.w, 1 - self.rate)
 
 
 class DropOutLayer(Layer):
+    prefix = "do"
+
     def __init__(self, rate):
-        super().__init__("do")
+        super().__init__()
 
         self.rate = rate
 
     def connect(self, *args):
         data = args[0]
         return tf.nn.dropout(data, 1 - self.rate, name=self.name)
-
