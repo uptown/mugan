@@ -16,9 +16,12 @@ train, cost, accuracy = build(data, true_labels, dropout_rate)
 
 saver = tf.train.Saver()
 
-with tf.device('/gpu:0'):
-    sess = tf.Session()
+# config = tf.ConfigProto(
+#     device_count={'GPU': 0}
+# )
+sess = tf.Session()
 
+with tf.device('/cpu:0'):
     sess.run(tf.global_variables_initializer())
     cost_sum = 0
     max_acc = 0
