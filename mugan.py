@@ -21,7 +21,7 @@ saver = tf.train.Saver()
 # )
 sess = tf.Session()
 
-with tf.device('/cpu:0'):
+with tf.device('/gpu:0'):
     sess.run(tf.global_variables_initializer())
     cost_sum = 0
     max_acc = 0
