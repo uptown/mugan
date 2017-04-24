@@ -5,8 +5,7 @@ class ClassificationNetwork:
     def __init__(self, data, learning_rate=0.0001):
         self.is_training = tf.placeholder(tf.bool)
         self.learning_rate = learning_rate
-        self.data = data
-        self._last_output = self.data
+        self._last_output = data
         self.cost_eq = None
         self.pred_val = None
         self.opt = None
@@ -40,8 +39,10 @@ class ClassificationNetwork:
         # return layer_name
 
     def build(self, true_labels):
+        print(self._last_output)
         self.cost_eq = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=self._last_output, labels=true_labels))
+        print(self.cost_eq)
         self.pred_val = tf.nn.softmax(self._last_output)
         self.opt = tf.train.AdamOptimizer(name="adam", learning_rate=self.learning_rate).minimize(self.cost_eq)
         prediction = tf.equal(tf.argmax(self.pred_val, 1), tf.argmax(true_labels, 1))

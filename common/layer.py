@@ -83,6 +83,7 @@ class ConvolutionLayer(Layer):
             self.f = tf.get_variable("f", shape=[h_c_size, w_c_size, self.in_ch, self.out_ch],
                                      initializer=tf.contrib.layers.xavier_initializer_conv2d())
             self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
+            print(self.f, self.b)
             # self.bn_layer = BatchNormalizationLayer()
 
     def connect(self, data):

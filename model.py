@@ -66,7 +66,7 @@ def build(data, true_labels, keep_rate):
 
     network.build(true_labels)
 
-    def train(session, d, true_out, keep=0.3):
+    def train(session, d, true_out, keep=0.7):
         return session.run(network.opt,
                            feed_dict={data: d, true_labels: true_out, keep_rate: keep})
 
