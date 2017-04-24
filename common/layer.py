@@ -84,13 +84,19 @@ class ConvolutionLayer(Layer):
         self.padding = padding
         self.activation = activation
         with tf.variable_scope(self.name):
-            self.f = tf.get_variable("f", shape=[h_c_size, w_c_size, self.in_ch, self.out_ch],
-                                     initializer=tf.contrib.layers.xavier_initializer_conv2d())
-            self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
+            self.f = tf.Variable(
+                tf.truncated_normal([h_c_size, w_c_size, self.in_ch, self.out_ch], self.mean, self.stddev),
+                name="f")
+            self.b = tf.Variable(tf.truncated_normal([self.out_ch], self.mean, self.stddev), name="b")
+
+            # self.f = tf.get_variable("f", shape=[h_c_size, w_c_size, self.in_ch, self.out_ch],
+            #                          initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            # self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
             # self.bn_layer = BatchNormalizationLayer()
 
     def connect(self, data):
         t = tf.nn.conv2d(data, self.f, strides=self.strides, padding=self.padding)
+        print(t, self.name)
         t = tf.nn.bias_add(t, self.b)
         # t = self.bn_layer.connect(t)
         # with tf.variable_scope(self.name):
@@ -214,16 +220,23 @@ class FullConnectedLayer(Layer):
         with tf.variable_scope(self.name):
 
             if type(in_ch) in (list, tuple):
-                self.w = tf.get_variable("w", shape=[sum(self.in_ch), self.out_ch],
-                                         initializer=tf.contrib.layers.xavier_initializer())
-                # self.w = tf.Variable(tf.truncated_normal([sum(self.in_ch), self.out_ch], self.mean, self.stddev),
-                #                      name="w")
+                self.w = tf.Variable(tf.truncated_normal([sum(self.in_ch), self.out_ch], self.mean, self.stddev),
+                                     name="w")
             else:
-                self.w = tf.get_variable("w", shape=[self.in_ch, self.out_ch],
-                                         initializer=tf.contrib.layers.xavier_initializer())
-                # self.w = tf.Variable(tf.truncated_normal([self.in_ch, self.out_ch], self.mean, self.stddev),
-                #                      name="w")
-            self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
+                self.w = tf.Variable(tf.truncated_normal([self.in_ch, self.out_ch], self.mean, self.stddev),
+                                     name="w")
+            self.b = tf.Variable(tf.truncated_normal([self.out_ch], self.mean, self.stddev), name="b")
+            # if type(in_ch) in (list, tuple):
+            #     self.w = tf.get_variable("w", shape=[sum(self.in_ch), self.out_ch],
+            #                              initializer=tf.contrib.layers.xavier_initializer())
+            #     # self.w = tf.Variable(tf.truncated_normal([sum(self.in_ch), self.out_ch], self.mean, self.stddev),
+            #     #                      name="w")
+            # else:
+            #     self.w = tf.get_variable("w", shape=[self.in_ch, self.out_ch],
+            #                              initializer=tf.contrib.layers.xavier_initializer())
+            #     # self.w = tf.Variable(tf.truncated_normal([self.in_ch, self.out_ch], self.mean, self.stddev),
+            #     #                      name="w")
+            # self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
 
     def connect(self, *args):
         if len(args) > 1:
