@@ -10,7 +10,7 @@ class Layer:
     prefix = "layer"
 
     def __init__(self):
-        self.name = self.prefix + ":" + str(_layer_count[self.__class__])
+        self.name = self.prefix + "_" + str(_layer_count[self.__class__])
         _layer_count[self.__class__] += 1
         self.network = None
 
@@ -29,9 +29,12 @@ class LSTMLayer(Layer):
 
         self.n_hidden = n_hidden
         with tf.variable_scope(self.name):
-            self.w = tf.Variable(tf.truncated_normal([n_hidden, n_classes], self.mean, self.stddev),
-                                 name="w")
-            self.b = tf.Variable(tf.truncated_normal([n_classes], self.mean, self.stddev), name="b")
+            self.f = tf.get_variable("w", shape=[n_hidden, n_classes],
+                                     initializer=tf.contrib.layers.xavier_initializer())
+            self.b = tf.Variable(tf.zeros([n_classes]), name="b")
+            # self.w = tf.Variable(tf.truncated_normal([n_hidden, n_classes], self.mean, self.stddev),
+            #                      name="w")
+            # self.b = tf.Variable(tf.truncated_normal([n_classes], self.mean, self.stddev), name="b")
 
     def connect(self, x):
         # x = tf.unstack(tf.reshape(tf.transpose(data, [0, 3, 1, 2]), [-1, 128 * 12, 12]), 128 * 12, 1)  # 128, 2, 2
@@ -77,10 +80,9 @@ class ConvolutionLayer(Layer):
         self.padding = padding
         self.activation = activation
         with tf.variable_scope(self.name):
-            self.f = tf.Variable(
-                tf.truncated_normal([h_c_size, w_c_size, self.in_ch, self.out_ch], self.mean, self.stddev),
-                name="f")
-            self.b = tf.Variable(tf.truncated_normal([self.out_ch], self.mean, self.stddev), name="b")
+            self.f = tf.get_variable("f", shape=[h_c_size, w_c_size, self.in_ch, self.out_ch],
+                                     initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
             # self.bn_layer = BatchNormalizationLayer()
 
     def connect(self, data):
@@ -106,13 +108,13 @@ class ActivationLayer(Layer):
 class DeconvolutionLayer(Layer):
     prefix = "deconv"
 
-    def __init__(self, in_ch, out_shape, c_size=3, strides=None, padding="SAME", activation=tf.nn.relu):
+    def __init__(self, in_shape, out_shape, c_size=3, strides=None, padding="SAME", activation=tf.nn.relu):
         super().__init__()
         if strides is None:
             strides = [1, 1, 1, 1]
 
         self.out_shape = out_shape
-        self.in_ch = in_ch
+        self.in_shape = in_shape
         if type(c_size) in (list, tuple):
             h_c_size = c_size[0]
             w_c_size = c_size[1]
@@ -123,13 +125,18 @@ class DeconvolutionLayer(Layer):
         self.activation = activation
 
         with tf.variable_scope(self.name):
-            self.f = tf.Variable(
-                tf.truncated_normal([h_c_size, w_c_size, in_ch, out_shape[-1]], self.mean, self.stddev),
-                name="f")
-            self.b = tf.Variable(tf.truncated_normal([out_shape[-1]], self.mean, self.stddev), name="b")
+            self.f = tf.get_variable("f", shape=[h_c_size, w_c_size, in_shape[-1], out_shape[-1]],
+                                     initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            self.b = tf.Variable(tf.zeros([out_shape[-1]]), name="b")
+
+            # self.f = tf.Variable(
+            #     tf.truncated_normal([h_c_size, w_c_size, in_ch, out_shape[-1]], self.mean, self.stddev),
+            #     name="f")
+            # self.b = tf.Variable(tf.truncated_normal([out_shape[-1]], self.mean, self.stddev), name="b")
 
     def connect(self, data):
-        t = tf.nn.conv2d_transpose(data, self.f, self.out_shape, strides=self.strides, padding=self.padding)
+        t = tf.nn.conv2d_transpose(tf.reshape(data, self.in_shape), self.f, self.out_shape, strides=self.strides,
+                                   padding=self.padding)
         t = tf.nn.bias_add(t, self.b)
         return self.activation(t) if self.activation else t
 
@@ -203,12 +210,16 @@ class FullConnectedLayer(Layer):
         with tf.variable_scope(self.name):
 
             if type(in_ch) in (list, tuple):
-                self.w = tf.Variable(tf.truncated_normal([sum(self.in_ch), self.out_ch], self.mean, self.stddev),
-                                     name="w")
+                self.w = tf.get_variable("w", shape=[sum(self.in_ch), self.out_ch],
+                                         initializer=tf.contrib.layers.xavier_initializer())
+                # self.w = tf.Variable(tf.truncated_normal([sum(self.in_ch), self.out_ch], self.mean, self.stddev),
+                #                      name="w")
             else:
-                self.w = tf.Variable(tf.truncated_normal([self.in_ch, self.out_ch], self.mean, self.stddev),
-                                     name="w")
-            self.b = tf.Variable(tf.truncated_normal([self.out_ch], self.mean, self.stddev), name="b")
+                self.w = tf.get_variable("w", shape=[self.in_ch, self.out_ch],
+                                         initializer=tf.contrib.layers.xavier_initializer())
+                # self.w = tf.Variable(tf.truncated_normal([self.in_ch, self.out_ch], self.mean, self.stddev),
+                #                      name="w")
+            self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
 
     def connect(self, *args):
         if len(args) > 1:
@@ -240,7 +251,7 @@ class DropConnectedLayer(FullConnectedLayer):
     def __init__(self, in_ch, out_ch, rate, activation=tf.nn.relu):
         super().__init__(in_ch, out_ch, activation)
         self.rate = rate
-        self.w = tf.nn.dropout(self.w, 1 - self.rate)
+        self.w = tf.nn.dropout(self.w, self.rate)
 
 
 class DropOutLayer(Layer):
@@ -253,4 +264,4 @@ class DropOutLayer(Layer):
 
     def connect(self, *args):
         data = args[0]
-        return tf.nn.dropout(data, 1 - self.rate, name=self.name)
+        return tf.nn.dropout(data, self.rate, name=self.name)

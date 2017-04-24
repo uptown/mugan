@@ -2,15 +2,19 @@ import tensorflow as tf
 
 
 class ClassificationNetwork:
-
-    def __init__(self, is_training, data):
-        self.is_training = is_training
+    def __init__(self, data, learning_rate=0.0001):
+        self.is_training = tf.placeholder(tf.bool)
+        self.learning_rate = learning_rate
         self.data = data
-        self.dropout_rate = tf.placeholder(tf.float32)
         self._last_output = self.data
         self.cost_eq = None
         self.pred_val = None
+        self.opt = None
+        self.acc = None
+
         self.layer_map = {}
+        self.variables = {}
+        self._var_idx = 0
 
     def add_layer(self, layer):
         layer.set_network(self)
@@ -39,9 +43,11 @@ class ClassificationNetwork:
         self.cost_eq = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=self._last_output, labels=true_labels))
         self.pred_val = tf.nn.softmax(self._last_output)
+        self.opt = tf.train.AdamOptimizer(name="adam", learning_rate=self.learning_rate).minimize(self.cost_eq)
+        prediction = tf.equal(tf.argmax(self.pred_val, 1), tf.argmax(true_labels, 1))
+        self.acc = tf.reduce_sum(tf.cast(prediction, tf.float32))
 
 
 class GANNetwork:
-
     def __init__(self):
         pass

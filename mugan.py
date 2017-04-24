@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorlayer as tfl
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 from model import build
@@ -20,7 +19,7 @@ train, cost, accuracy = build(data, true_labels, dropout_rate)
 
 saver = tf.train.Saver()
 
-with tf.device('/gpu:0'):
+with tf.device('/cpu:0'):
     sess = tf.Session()
 
     sess.run(tf.global_variables_initializer())
@@ -45,33 +44,12 @@ with tf.device('/gpu:0'):
                 j += 1
             if acc > max_acc:
                 max_iter = i
-                save_path = saver.save(sess, "model_/model.ckpt")
+                save_path = saver.save(sess, "_model/model.ckpt")
             max_acc = max(max_acc, acc)
             print("Acc: ", int(acc), "/" + str(len(xs)))
             print("Max Acc: ", int(max_acc), "/" + str(len(xs)), max_iter)
 
-        # tk 설치
         batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-        if i % 4 == 0:
-            batch_xs = tfl.prepro.elastic_transform_multi(batch_xs.reshape([batch_size, 28, 28]), alpha=1,
-                                                          sigma=0.04)
-
-        if i % 4 == 1:
-            batch_xs = tfl.prepro.rotation_multi(batch_xs.reshape([batch_size, 28, 28, 1]), rg=40, is_random=True)
-
-        if i % 4 == 2:
-            batch_xs = tfl.prepro.rotation_multi(batch_xs.reshape([batch_size, 28, 28, 1]), rg=40, is_random=True)
-            batch_xs = tfl.prepro.elastic_transform_multi(batch_xs.reshape([batch_size, 28, 28]), alpha=1,
-                                                          sigma=0.04)
-
-        # 가로 수축, 세로 수축 .... 시간이 없어서 못함ㅠㅠㅠ
-        #
-
-        batch_xs4 = np.concatenate((np.zeros([batch_size, 28, 1]), np.resize(batch_xs, [batch_size, 28, 26]),
-                                    np.zeros([batch_size, 28, 1])), axis=2)
-
-        train(sess, np.reshape(batch_xs4, (batch_size, 28, 28, 1)) - norm, batch_ys)
-
         train(sess, np.reshape(batch_xs, (batch_size, 28, 28, 1)) - norm, batch_ys)
 
         cost_sum += cost(sess, np.reshape(batch_xs, (batch_size, 28, 28, 1)) - norm, batch_ys)
