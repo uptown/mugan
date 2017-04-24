@@ -19,7 +19,7 @@ train, cost, accuracy = build(data, true_labels, dropout_rate)
 
 saver = tf.train.Saver()
 
-with tf.device('/cpu:0'):
+with tf.device('/gpu:0'):
     sess = tf.Session()
 
     sess.run(tf.global_variables_initializer())
