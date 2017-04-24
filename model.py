@@ -42,7 +42,7 @@ def build(data, true_labels, keep_rate):
     network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
     network.add_layer_and_connect(MaxPoolLayer())
 
-    network.add_layer_and_connect(DropConnectedLayer(1 * 1 * 512, 4096, keep_rate))
+    network.add_layer_and_connect(DropConnectedLayer(2 * 2 * 512, 4096, keep_rate))
 
     network.add_layer_and_connect(DropOutLayer(keep_rate))
     network.add_layer_and_connect(DropConnectedLayer(4096, 4096, keep_rate))

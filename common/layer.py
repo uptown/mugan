@@ -20,6 +20,10 @@ class Layer:
     def connect(self, *args, **kwargs):
         raise NotImplemented
 
+    def __call__(self, *args, **kwargs):
+        with tf.variable_scope(self.name):
+            return self.connect(*args, **kwargs)
+
 
 class LSTMLayer(Layer):
     prefix = "lstm"
@@ -29,7 +33,7 @@ class LSTMLayer(Layer):
 
         self.n_hidden = n_hidden
         with tf.variable_scope(self.name):
-            self.f = tf.get_variable("w", shape=[n_hidden, n_classes],
+            self.w = tf.get_variable("w", shape=[n_hidden, n_classes],
                                      initializer=tf.contrib.layers.xavier_initializer())
             self.b = tf.Variable(tf.zeros([n_classes]), name="b")
             # self.w = tf.Variable(tf.truncated_normal([n_hidden, n_classes], self.mean, self.stddev),
@@ -83,7 +87,6 @@ class ConvolutionLayer(Layer):
             self.f = tf.get_variable("f", shape=[h_c_size, w_c_size, self.in_ch, self.out_ch],
                                      initializer=tf.contrib.layers.xavier_initializer_conv2d())
             self.b = tf.Variable(tf.zeros([self.out_ch]), name="b")
-            print(self.f, self.b)
             # self.bn_layer = BatchNormalizationLayer()
 
     def connect(self, data):

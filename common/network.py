@@ -27,9 +27,9 @@ class ClassificationNetwork:
     def connect(self, layer_name, inputs=None):
 
         if not inputs:
-            out = self.layer_map[layer_name].connect(self._last_output)
+            out = self.layer_map[layer_name](self._last_output)
         else:
-            out = self.layer_map[layer_name].connect(*[input for input in inputs])
+            out = self.layer_map[layer_name](*[input for input in inputs])
         self._last_output = out
         return out
 
@@ -39,7 +39,6 @@ class ClassificationNetwork:
         # return layer_name
 
     def build(self, true_labels):
-        print(self._last_output)
         self.cost_eq = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=self._last_output, labels=true_labels))
         print(self.cost_eq)
