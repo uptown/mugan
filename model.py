@@ -71,9 +71,9 @@ def build(data, true_labels, keep_rate):
 
     def cost(session, d, true_out):
         return session.run(network.cost_eq,
-                           feed_dict={data: d, true_labels: true_out, keep_rate: 0})
+                           feed_dict={data: d, true_labels: true_out, keep_rate: 1})
 
     def accuracy(session, d, true_out):
-        return session.run(network.acc, feed_dict={data: d, true_labels: true_out, keep_rate: 0})
+        return session.run(network.acc, feed_dict={data: d, true_labels: true_out, keep_rate: 1})
 
     return train, cost, accuracy
