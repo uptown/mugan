@@ -20,29 +20,29 @@ def build(data, true_labels, keep_rate):
     network.add_layer_and_connect(ConvolutionLayer(64, 64, c_size=3))
     network.add_layer_and_connect(MaxPoolLayer())
 
-    network.add_layer_and_connect(ConvolutionLayer(64, 128, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(128, 128, c_size=3))
-    network.add_layer_and_connect(MaxPoolLayer())
+    # network.add_layer_and_connect(ConvolutionLayer(64, 128, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(128, 128, c_size=3))
+    # network.add_layer_and_connect(MaxPoolLayer())
+    #
+    # network.add_layer_and_connect(ConvolutionLayer(128, 256, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(256, 256, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(256, 256, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(256, 256, c_size=3))
+    # network.add_layer_and_connect(MaxPoolLayer())
+    #
+    # network.add_layer_and_connect(ConvolutionLayer(256, 512, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(MaxPoolLayer())
+    #
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
+    # network.add_layer_and_connect(MaxPoolLayer())
 
-    network.add_layer_and_connect(ConvolutionLayer(128, 256, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(256, 256, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(256, 256, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(256, 256, c_size=3))
-    network.add_layer_and_connect(MaxPoolLayer())
-
-    network.add_layer_and_connect(ConvolutionLayer(256, 512, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(MaxPoolLayer())
-
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(ConvolutionLayer(512, 512, c_size=3))
-    network.add_layer_and_connect(MaxPoolLayer())
-
-    network.add_layer_and_connect(DropConnectedLayer(1 * 1 * 512, 4096, keep_rate))
+    network.add_layer_and_connect(DropConnectedLayer(14 * 14 * 64, 4096, keep_rate))
 
     network.add_layer_and_connect(DropOutLayer(keep_rate))
     network.add_layer_and_connect(DropConnectedLayer(4096, 4096, keep_rate))
@@ -62,7 +62,7 @@ def build(data, true_labels, keep_rate):
 
     network.build(true_labels)
 
-    def train(session, d, true_out, keep=0.5):
+    def train(session, d, true_out, keep=0.3):
         return session.run(network.opt,
                            feed_dict={data: d, true_labels: true_out, keep_rate: keep})
 
