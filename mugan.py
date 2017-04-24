@@ -3,9 +3,6 @@ import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 from model import build
 
-# 재현을 위해 rand seed 설정
-tf.set_random_seed(777)
-
 # load mnist data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 batch_size = 250
